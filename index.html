@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>節奏色彩挑戰 - 團體遊戲版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto+Sans+TC', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .color-card {
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(0.95);
+            opacity: 0.3;
+        }
+
+        .color-card.active {
+            transform: scale(1.08);
+            opacity: 1;
+            box-shadow: 0 0 50px currentColor;
+            z-index: 10;
+        }
+
+        .pulse {
+            animation: pulse-animation 0.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .timer-bar {
+            transition: width 1s linear;
+        }
+
+        select option {
+            background-color: #1e293b;
+            color: white;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <!-- 頂部標題 -->
+    <div class="w-full max-w-4xl text-center mb-6">
+        <h1 class="text-4xl md:text-6xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500">
+            節奏色彩挑戰
+        </h1>
+        <p class="text-slate-400 text-lg">專業音樂同步版本 (120 BPM Drum Beat)</p>
+    </div>
+
+    <!-- 遊戲主區域 -->
+    <div class="w-full max-w-6xl bg-slate-800/50 rounded-3xl p-6 md:p-8 border border-slate-700 shadow-2xl">
+        
+        <!-- 控制面板 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <!-- 音樂模式選擇 -->
+            <div class="flex flex-col space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">背景音樂模式</label>
+                <select id="musicMode" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-cyan-400 font-bold focus:outline-none focus:border-cyan-500">
+                    <option value="metronome">基礎節拍器模式</option>
+                    <option value="drum120">專業鼓點 (120 BPM)</option>
+                </select>
+            </div>
+
+            <!-- BPM 控制 -->
+            <div class="flex flex-col space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">速度 (BPM)</label>
+                <div class="flex items-center space-x-3 bg-slate-900/50 p-2 rounded-xl border border-slate-700/50">
+                    <input type="range" id="bpmRange" min="40" max="180" value="100" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                    <span id="bpmValue" class="text-xl font-mono font-bold text-cyan-400 w-10">100</span>
+                </div>
+            </div>
+
+            <!-- 拍數 -->
+            <div class="flex flex-col space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">循環拍數</label>
+                <div class="flex bg-slate-900 rounded-xl p-1 h-10">
+                    <button onclick="setBeats(4)" id="btnBeats4" class="flex-1 rounded-lg font-bold transition bg-cyan-600 text-white">4 拍</button>
+                    <button onclick="setBeats(8)" id="btnBeats8" class="flex-1 rounded-lg font-bold transition text-slate-400">8 拍</button>
+                </div>
+            </div>
+
+            <!-- 語音選擇 -->
+            <div class="flex flex-col space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">選擇人聲</label>
+                <select id="voiceSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500">
+                    <option value="">載入語音中...</option>
+                </select>
+            </div>
+
+            <!-- 遊戲時間 -->
+            <div class="flex flex-col space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">時間 (秒)</label>
+                <input type="number" id="gameDuration" value="60" min="10" max="300" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-cyan-500">
+            </div>
+        </div>
+
+        <!-- 狀態指示燈 -->
+        <div class="flex flex-col items-center mb-6">
+            <div id="phaseIndicator" class="text-3xl md:text-5xl font-black mb-4 transition-all duration-300 text-slate-500">
+                點擊開始進行挑戰
+            </div>
+            <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                <div id="gameTimerBar" class="timer-bar h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-full"></div>
+            </div>
+        </div>
+
+        <!-- 顏色卡片顯示區 -->
+        <div id="colorContainer" class="grid grid-cols-4 gap-3 md:gap-5 mb-8">
+            <!-- 由 JS 生成 -->
+        </div>
+
+        <!-- 操作按鈕 -->
+        <div class="flex justify-center space-x-6">
+            <button id="startBtn" class="px-12 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black text-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
+                開始挑戰
+            </button>
+            <button id="stopBtn" class="hidden px-12 py-4 bg-rose-500 hover:bg-rose-400 text-white rounded-2xl font-black text-xl shadow-lg shadow-rose-500/20 transition-all active:scale-95">
+                停止
+            </button>
+        </div>
+    </div>
+
+    <!-- 音樂資源 (使用類似音源作為 Placeholder) -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://actions.google.com/sounds/v1/science_fiction/techno_pulse.ogg" type="audio/ogg">
+        <!-- 備用：若有特定 URL 可替換至此 -->
+    </audio>
+
+    <div class="mt-8 flex flex-col items-center space-y-2 text-slate-500 text-sm">
+        <p>💡 提示：選擇「專業鼓點」後，BPM 會自動設定為 120 以符合音樂節奏。</p>
+        <div class="flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <span>推薦使用 Chrome 或 Edge 瀏覽器以獲得最佳同步效果。</span>
+        </div>
+    </div>
+
+    <script>
+        const COLORS = [
+            { name: '紅', bg: 'bg-red-500', color: '#ef4444' },
+            { name: '藍', bg: 'bg-blue-500', color: '#3b82f6' },
+            { name: '綠', bg: 'bg-emerald-500', color: '#10b981' },
+            { name: '黃', bg: 'bg-yellow-400', color: '#facc15' },
+            { name: '紫', bg: 'bg-purple-500', color: '#a855f7' },
+            { name: '橘', bg: 'bg-orange-500', color: '#f97316' },
+            { name: '粉', bg: 'bg-pink-400', color: '#f472b6' },
+            { name: '青', bg: 'bg-cyan-400', color: '#22d3ee' }
+        ];
+
+        let bpm = 100;
+        let beatsPerCycle = 4; 
+        let isPlaying = false;
+        let currentStep = -1; 
+        let currentSequence = [];
+        let gameTimer = null;
+        let remainingTime = 60;
+        let beatInterval = null;
+
+        // Audio & Speech
+        let audioCtx = null;
+        const synth = window.speechSynthesis;
+        let availableVoices = [];
+        let selectedVoice = null;
+        const bgMusic = document.getElementById('bgMusic');
+
+        // DOM
+        const musicMode = document.getElementById('musicMode');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const colorContainer = document.getElementById('colorContainer');
+        const bpmRange = document.getElementById('bpmRange');
+        const bpmValue = document.getElementById('bpmValue');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const phaseIndicator = document.getElementById('phaseIndicator');
+        const gameTimerBar = document.getElementById('gameTimerBar');
+        const gameDurationInput = document.getElementById('gameDuration');
+
+        function init() {
+            renderCards();
+            loadVoices();
+            
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+
+            bpmRange.addEventListener('input', (e) => {
+                bpm = parseInt(e.target.value);
+                bpmValue.textContent = bpm;
+            });
+
+            musicMode.addEventListener('change', (e) => {
+                if (e.target.value === 'drum120') {
+                    bpm = 120;
+                    bpmValue.textContent = 120;
+                    bpmRange.value = 120;
+                    bpmRange.disabled = true;
+                } else {
+                    bpmRange.disabled = false;
+                }
+            });
+
+            startBtn.addEventListener('click', startGame);
+            stopBtn.addEventListener('click', stopGame);
+        }
+
+        function loadVoices() {
+            availableVoices = synth.getVoices();
+            if (availableVoices.length === 0) return;
+            voiceSelect.innerHTML = '';
+            const zhVoices = availableVoices.filter(v => v.lang.includes('zh') || v.lang.includes('TW') || v.lang.includes('HK'));
+            const others = availableVoices.filter(v => !v.lang.includes('zh'));
+            const allSorted = [...zhVoices, ...others];
+            allSorted.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.lang === 'zh-TW' && (voice.name.includes('Mei-Jia') || voice.name.includes('Google'))) option.selected = true;
+                voiceSelect.appendChild(option);
+            });
+            updateSelectedVoice();
+        }
+
+        voiceSelect.addEventListener('change', updateSelectedVoice);
+        function updateSelectedVoice() {
+            selectedVoice = availableVoices.find(v => v.name === voiceSelect.value);
+        }
+
+        function setBeats(n) {
+            if (isPlaying) return;
+            beatsPerCycle = n;
+            document.getElementById('btnBeats4').className = n === 4 ? 'flex-1 rounded-lg font-bold transition bg-cyan-600 text-white' : 'flex-1 rounded-lg font-bold transition text-slate-400';
+            document.getElementById('btnBeats8').className = n === 8 ? 'flex-1 rounded-lg font-bold transition bg-cyan-600 text-white' : 'flex-1 rounded-lg font-bold transition text-slate-400';
+            renderCards();
+        }
+
+        function renderCards() {
+            colorContainer.innerHTML = '';
+            for (let i = 0; i < beatsPerCycle; i++) {
+                const card = document.createElement('div');
+                card.id = `card-${i}`;
+                card.className = `color-card aspect-square rounded-2xl flex items-center justify-center bg-slate-700 border-4 border-slate-600 shadow-xl`;
+                card.innerHTML = `<span class="text-3xl md:text-5xl font-black">?</span>`;
+                colorContainer.appendChild(card);
+            }
+        }
+
+        function playBeatSound(isFirst) {
+            // 只有在節拍器模式才發出電子嗶聲
+            if (musicMode.value !== 'metronome') return;
+
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.frequency.value = isFirst ? 900 : 450;
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function speakColor(text) {
+            // 強制清理上一個語音
+            synth.cancel();
+
+            const utter = new SpeechSynthesisUtterance(text);
+            if (selectedVoice) utter.voice = selectedVoice;
+            utter.lang = 'zh-TW';
+            
+            // 針對 120 BPM 的特別速度優化
+            // 這裡不再使用過於複雜的線性缩放，改用更穩定的階梯式倍率
+            utter.rate = bpm >= 120 ? 1.8 : 1.3; 
+            utter.pitch = 1.0;
+            utter.volume = 1.0;
+
+            // 使用短暫延遲確保語音引擎已經從上次的 cancel 中恢復
+            setTimeout(() => {
+                synth.speak(utter);
+            }, 10);
+        }
+
+        function generateSequence() {
+            currentSequence = [];
+            for (let i = 0; i < beatsPerCycle; i++) {
+                const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                currentSequence.push(randomColor);
+            }
+        }
+
+        function updateUI() {
+            const totalSteps = beatsPerCycle * 2;
+            const cycleStep = currentStep % totalSteps;
+            
+            if (cycleStep < beatsPerCycle) {
+                phaseIndicator.textContent = '👀 聽一聽，記下來';
+                phaseIndicator.className = 'text-3xl md:text-5xl font-black mb-4 text-cyan-400';
+                
+                const colorData = currentSequence[cycleStep];
+                
+                document.querySelectorAll('.color-card').forEach((card, idx) => {
+                    const data = currentSequence[idx];
+                    if (idx === cycleStep) {
+                        card.className = `color-card active aspect-square rounded-2xl flex items-center justify-center ${data.bg} border-white text-white shadow-xl`;
+                        card.innerHTML = `<span class="text-4xl md:text-6xl font-black">${data.name}</span>`;
+                        speakColor(data.name);
+                    } else {
+                        card.className = `color-card aspect-square rounded-2xl flex items-center justify-center ${data.bg} border-transparent text-white/20`;
+                        card.innerHTML = `<span class="text-2xl md:text-4xl font-bold">${data.name}</span>`;
+                    }
+                });
+            } else {
+                const echoStep = cycleStep - beatsPerCycle;
+                phaseIndicator.textContent = '🗣️ 換你們唸！';
+                phaseIndicator.className = 'text-3xl md:text-5xl font-black mb-4 text-fuchsia-400 pulse';
+
+                document.querySelectorAll('.color-card').forEach((card, idx) => {
+                    if (idx === echoStep) {
+                        card.className = `color-card active aspect-square rounded-2xl flex items-center justify-center bg-white border-fuchsia-500 text-slate-900 shadow-xl`;
+                        card.innerHTML = `<span class="text-4xl md:text-6xl font-black">?</span>`;
+                    } else {
+                        card.className = `color-card aspect-square rounded-2xl flex items-center justify-center bg-slate-900 border-transparent text-slate-700`;
+                        card.innerHTML = `<span class="text-2xl md:text-4xl font-bold">?</span>`;
+                    }
+                });
+            }
+
+            playBeatSound(cycleStep === 0 || cycleStep === beatsPerCycle);
+        }
+
+        function startGame() {
+            if (isPlaying) return;
+            
+            // 語音與音樂準備
+            synth.cancel();
+            if (musicMode.value === 'drum120') {
+                bgMusic.currentTime = 0;
+                bgMusic.play();
+            }
+
+            isPlaying = true;
+            currentStep = 0;
+            remainingTime = parseInt(gameDurationInput.value) || 60;
+            const initialTime = remainingTime;
+            
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            gameDurationInput.disabled = true;
+            musicMode.disabled = true;
+            bpmRange.disabled = true;
+            voiceSelect.disabled = true;
+
+            generateSequence();
+            updateUI();
+
+            const msPerBeat = (60 / bpm) * 1000;
+            beatInterval = setInterval(() => {
+                currentStep++;
+                if (currentStep % (beatsPerCycle * 2) === 0) {
+                    generateSequence();
+                }
+                updateUI();
+            }, msPerBeat);
+
+            gameTimer = setInterval(() => {
+                remainingTime--;
+                const percent = (remainingTime / initialTime) * 100;
+                gameTimerBar.style.width = `${percent}%`;
+                if (remainingTime <= 0) {
+                    stopGame();
+                    phaseIndicator.textContent = '🎉 挑戰結束！';
+                    phaseIndicator.className = 'text-3xl md:text-5xl font-black mb-4 text-emerald-400';
+                }
+            }, 1000);
+        }
+
+        function stopGame() {
+            isPlaying = false;
+            clearInterval(beatInterval);
+            clearInterval(gameTimer);
+            synth.cancel(); 
+            bgMusic.pause();
+            
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            gameDurationInput.disabled = false;
+            musicMode.disabled = false;
+            if (musicMode.value !== 'drum120') bpmRange.disabled = false;
+            voiceSelect.disabled = false;
+            
+            currentStep = -1;
+            renderCards();
+            phaseIndicator.textContent = '準備好了嗎？';
+            phaseIndicator.className = 'text-3xl md:text-5xl font-black mb-4 text-slate-500';
+            gameTimerBar.style.width = '100%';
+        }
+
+        init();
+    </script>
+</body>
+</html>
