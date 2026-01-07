@@ -46,6 +46,44 @@
             background-color: #1e293b;
             color: white;
         }
+
+        .prep-overlay {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 顏色選擇器樣式 */
+        .color-toggle {
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .color-toggle.inactive {
+            opacity: 0.2;
+            filter: grayscale(0.8);
+            transform: scale(0.85);
+        }
+        .color-toggle.active::after {
+            content: '✓';
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            border: 2px solid #0f172a;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 md:p-8">
@@ -55,24 +93,29 @@
         <h1 class="text-4xl md:text-6xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500">
             節奏色彩挑戰
         </h1>
-        <p class="text-slate-400 text-lg">專業音樂同步版本 (120 BPM Drum Beat)</p>
+        <p class="text-slate-400 text-lg">自訂顏色池與導引版本</p>
     </div>
 
     <!-- 遊戲主區域 -->
-    <div class="w-full max-w-6xl bg-slate-800/50 rounded-3xl p-6 md:p-8 border border-slate-700 shadow-2xl">
+    <div class="w-full max-w-6xl bg-slate-800/50 rounded-3xl p-6 md:p-8 border border-slate-700 shadow-2xl relative">
         
-        <!-- 控制面板 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <!-- 音樂模式選擇 -->
+        <!-- 預備畫面疊加層 -->
+        <div id="prepLayer" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-slate-900/95 rounded-3xl prep-overlay">
+            <div id="prepText" class="text-7xl md:text-9xl font-black text-white text-center drop-shadow-2xl">
+                準備中
+            </div>
+        </div>
+
+        <!-- 第一排：核心設定 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="flex flex-col space-y-2">
                 <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">背景音樂模式</label>
                 <select id="musicMode" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-cyan-400 font-bold focus:outline-none focus:border-cyan-500">
                     <option value="metronome">基礎節拍器模式</option>
-                    <option value="drum120">專業鼓點 (120 BPM)</option>
+                    <option value="drum">專業鼓點模式 (可調速)</option>
                 </select>
             </div>
 
-            <!-- BPM 控制 -->
             <div class="flex flex-col space-y-2">
                 <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">速度 (BPM)</label>
                 <div class="flex items-center space-x-3 bg-slate-900/50 p-2 rounded-xl border border-slate-700/50">
@@ -81,7 +124,6 @@
                 </div>
             </div>
 
-            <!-- 拍數 -->
             <div class="flex flex-col space-y-2">
                 <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">循環拍數</label>
                 <div class="flex bg-slate-900 rounded-xl p-1 h-10">
@@ -90,18 +132,27 @@
                 </div>
             </div>
 
-            <!-- 語音選擇 -->
+            <div class="flex flex-col space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">挑戰時間 (秒)</label>
+                <input type="number" id="gameDuration" value="60" min="10" max="300" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-cyan-500">
+            </div>
+        </div>
+
+        <!-- 第二排：進階自訂 (語音與顏色選擇) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 border-t border-slate-700/50 pt-6">
+            <!-- 語音 -->
             <div class="flex flex-col space-y-2">
                 <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">選擇人聲</label>
-                <select id="voiceSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500">
+                <select id="voiceSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500 w-full">
                     <option value="">載入語音中...</option>
                 </select>
             </div>
-
-            <!-- 遊戲時間 -->
+            <!-- 顏色池 -->
             <div class="flex flex-col space-y-2">
-                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">時間 (秒)</label>
-                <input type="number" id="gameDuration" value="60" min="10" max="300" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-cyan-500">
+                <label class="text-xs font-bold text-slate-500 uppercase tracking-tighter">顏色池選擇 (點擊切換)</label>
+                <div id="colorPickerContainer" class="flex flex-wrap gap-3">
+                    <!-- 由 JS 生成 -->
+                </div>
             </div>
         </div>
 
@@ -131,37 +182,40 @@
         </div>
     </div>
 
-    <!-- 音樂資源 -->
-    <audio id="bgMusic" loop preload="auto">
-        <source src="https://actions.google.com/sounds/v1/science_fiction/techno_pulse.ogg" type="audio/ogg">
-    </audio>
-
     <div class="mt-8 flex flex-col items-center space-y-2 text-slate-500 text-sm">
-        <p>💡 提示：選擇「專業鼓點」後，BPM 會自動設定為 120 以符合音樂節奏。</p>
+        <p>💡 提示：您可以自由選擇想要出現的顏色，並搭配 8 拍語音指令對拍！</p>
         <div class="flex items-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
             </svg>
-            <span>推薦使用 Chrome 或 Edge 瀏覽器以獲得最佳同步效果。</span>
+            <span>若勾選多個顏色，遊戲會從中隨機抽取。</span>
         </div>
     </div>
 
     <script>
         const COLORS = [
-            { name: '紅', bg: 'bg-red-500', color: '#ef4444' },
-            { name: '藍', bg: 'bg-blue-500', color: '#3b82f6' },
-            { name: '綠', bg: 'bg-emerald-500', color: '#10b981' },
-            { name: '黃', bg: 'bg-yellow-400', color: '#facc15' },
-            { name: '紫', bg: 'bg-purple-500', color: '#a855f7' },
-            { name: '橘', bg: 'bg-orange-500', color: '#f97316' },
-            { name: '粉', bg: 'bg-pink-400', color: '#f472b6' },
-            { name: '青', bg: 'bg-cyan-400', color: '#22d3ee' }
+            { id: 0, name: '紅', bg: 'bg-red-500', color: '#ef4444', active: true },
+            { id: 1, name: '黑', bg: 'bg-black', color: '#000000', text: 'text-white', active: true },
+            { id: 2, name: '綠', bg: 'bg-emerald-500', color: '#10b981', active: true },
+            { id: 3, name: '黃', bg: 'bg-yellow-400', color: '#facc15', active: true },
+            { id: 4, name: '紫', bg: 'bg-purple-500', color: '#a855f7', active: true },
+            { id: 5, name: '橘', bg: 'bg-orange-500', color: '#f97316', active: true },
+            { id: 6, name: '粉', bg: 'bg-pink-400', color: '#f472b6', active: true },
+            { id: 7, name: '藍', bg: 'bg-cyan-400', color: '#22d3ee', active: true },
+            { id: 8, name: '白', bg: 'bg-white', color: '#ffffff', text: 'text-black', active: true }
+        ];
+
+        const PREP_PHRASES = [
+            "我唸", "你唸", "我唸", "你做",
+            "動口", "動手", "準備", "開始"
         ];
 
         let bpm = 100;
         let beatsPerCycle = 4; 
         let isPlaying = false;
+        let isPreparing = false;
         let currentStep = -1; 
+        let prepStep = 0;
         let currentSequence = [];
         let gameTimer = null;
         let remainingTime = 60;
@@ -172,12 +226,12 @@
         const synth = window.speechSynthesis;
         let availableVoices = [];
         let selectedVoice = null;
-        const bgMusic = document.getElementById('bgMusic');
 
         // DOM
         const musicMode = document.getElementById('musicMode');
         const voiceSelect = document.getElementById('voiceSelect');
         const colorContainer = document.getElementById('colorContainer');
+        const colorPickerContainer = document.getElementById('colorPickerContainer');
         const bpmRange = document.getElementById('bpmRange');
         const bpmValue = document.getElementById('bpmValue');
         const startBtn = document.getElementById('startBtn');
@@ -185,31 +239,21 @@
         const phaseIndicator = document.getElementById('phaseIndicator');
         const gameTimerBar = document.getElementById('gameTimerBar');
         const gameDurationInput = document.getElementById('gameDuration');
+        const prepLayer = document.getElementById('prepLayer');
+        const prepText = document.getElementById('prepText');
 
         function init() {
             renderCards();
+            renderColorPickers();
             loadVoices();
-            
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = loadVoices;
             }
-
             bpmRange.addEventListener('input', (e) => {
                 bpm = parseInt(e.target.value);
                 bpmValue.textContent = bpm;
+                if (isPlaying) resetBeatInterval();
             });
-
-            musicMode.addEventListener('change', (e) => {
-                if (e.target.value === 'drum120') {
-                    bpm = 120;
-                    bpmValue.textContent = 120;
-                    bpmRange.value = 120;
-                    bpmRange.disabled = true;
-                } else {
-                    bpmRange.disabled = false;
-                }
-            });
-
             startBtn.addEventListener('click', startGame);
             stopBtn.addEventListener('click', stopGame);
         }
@@ -244,6 +288,25 @@
             renderCards();
         }
 
+        function renderColorPickers() {
+            colorPickerContainer.innerHTML = '';
+            COLORS.forEach(color => {
+                const div = document.createElement('div');
+                div.className = `color-toggle w-10 h-10 rounded-full border-2 border-slate-700 shadow-md ${color.bg} ${color.active ? 'active' : 'inactive'}`;
+                div.title = color.name;
+                div.onclick = () => {
+                    if (isPlaying) return;
+                    // 確保至少一個 active
+                    const activeCount = COLORS.filter(c => c.active).length;
+                    if (color.active && activeCount <= 1) return;
+                    
+                    color.active = !color.active;
+                    div.className = `color-toggle w-10 h-10 rounded-full border-2 border-slate-700 shadow-md ${color.bg} ${color.active ? 'active' : 'inactive'}`;
+                };
+                colorPickerContainer.appendChild(div);
+            });
+        }
+
         function renderCards() {
             colorContainer.innerHTML = '';
             for (let i = 0; i < beatsPerCycle; i++) {
@@ -255,61 +318,111 @@
             }
         }
 
-        function playBeatSound(isFirst) {
-            if (musicMode.value !== 'metronome') return;
-
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function createKick(time) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
-            osc.frequency.value = isFirst ? 900 : 450;
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+            osc.frequency.setValueAtTime(150, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.4);
+            gain.gain.setValueAtTime(0.8, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+            osc.start(time);
+            osc.stop(time + 0.4);
         }
 
-        function speakColor(text) {
+        function createSnare(time) {
+            const noise = audioCtx.createBufferSource();
+            const bufferSize = audioCtx.sampleRate * 0.1;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            noise.buffer = buffer;
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'highpass';
+            noiseFilter.frequency.value = 1000;
+            noise.connect(noiseFilter);
+            const noiseGain = audioCtx.createGain();
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noiseGain.gain.setValueAtTime(0.2, time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            noise.start(time);
+            noise.stop(time + 0.2);
+        }
+
+        function playSoundPattern(stepInCycle) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+
+            if (musicMode.value === 'metronome') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.value = (stepInCycle % beatsPerCycle === 0) ? 880 : 440;
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else {
+                const beatInCycle = stepInCycle % 4;
+                if (beatInCycle === 0 || beatInCycle === 2) createKick(now);
+                else createSnare(now);
+            }
+        }
+
+        function speakText(text) {
             synth.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             if (selectedVoice) utter.voice = selectedVoice;
             utter.lang = 'zh-TW';
-            utter.rate = bpm >= 120 ? 1.8 : 1.3; 
-            utter.pitch = 1.0;
-            utter.volume = 1.0;
-
-            setTimeout(() => {
-                synth.speak(utter);
-            }, 10);
+            let rateScale = bpm / 90;
+            utter.rate = Math.min(Math.max(rateScale, 1.4), 2.5); 
+            setTimeout(() => synth.speak(utter), 5);
         }
 
         function generateSequence() {
             currentSequence = [];
+            const activeColors = COLORS.filter(c => c.active);
             for (let i = 0; i < beatsPerCycle; i++) {
-                const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-                currentSequence.push(randomColor);
+                currentSequence.push(activeColors[Math.floor(Math.random() * activeColors.length)]);
             }
         }
 
         function updateUI() {
+            if (isPreparing) {
+                prepLayer.classList.remove('hidden');
+                const phrase = PREP_PHRASES[prepStep];
+                prepText.textContent = phrase;
+                
+                if (prepStep < 4) {
+                    prepText.className = "text-7xl md:text-9xl font-black text-cyan-400 text-center";
+                } else {
+                    prepText.className = "text-7xl md:text-9xl font-black text-emerald-400 text-center";
+                }
+                
+                speakText(phrase);
+                playSoundPattern(prepStep);
+                return;
+            }
+
+            prepLayer.classList.add('hidden');
             const totalSteps = beatsPerCycle * 2;
             const cycleStep = currentStep % totalSteps;
             
             if (cycleStep < beatsPerCycle) {
                 phaseIndicator.textContent = '👀 聽一聽，記下來';
                 phaseIndicator.className = 'text-3xl md:text-5xl font-black mb-4 text-cyan-400';
-                
                 const colorData = currentSequence[cycleStep];
-                
                 document.querySelectorAll('.color-card').forEach((card, idx) => {
                     const data = currentSequence[idx];
                     if (idx === cycleStep) {
-                        card.className = `color-card active aspect-square rounded-2xl flex items-center justify-center ${data.bg} border-white text-white shadow-xl`;
+                        const textColor = data.text || 'text-white';
+                        card.className = `color-card active aspect-square rounded-2xl flex items-center justify-center ${data.bg} border-white ${textColor} shadow-xl`;
                         card.innerHTML = `<span class="text-4xl md:text-6xl font-black">${data.name}</span>`;
-                        speakColor(data.name);
+                        speakText(data.name);
                     } else {
                         card.className = `color-card aspect-square rounded-2xl flex items-center justify-center ${data.bg} border-transparent text-white/20`;
                         card.innerHTML = `<span class="text-2xl md:text-4xl font-bold">${data.name}</span>`;
@@ -319,7 +432,6 @@
                 const echoStep = cycleStep - beatsPerCycle;
                 phaseIndicator.textContent = '🗣️ 換你們唸！';
                 phaseIndicator.className = 'text-3xl md:text-5xl font-black mb-4 text-fuchsia-400 pulse';
-
                 document.querySelectorAll('.color-card').forEach((card, idx) => {
                     if (idx === echoStep) {
                         card.className = `color-card active aspect-square rounded-2xl flex items-center justify-center bg-white border-fuchsia-500 text-slate-900 shadow-xl`;
@@ -330,50 +442,32 @@
                     }
                 });
             }
-
-            playBeatSound(cycleStep === 0 || cycleStep === beatsPerCycle);
+            playSoundPattern(cycleStep);
         }
 
-        async function startGame() {
-            if (isPlaying) return;
-            
-            synth.cancel();
-            
-            // 安全地啟動音訊播放
-            if (musicMode.value === 'drum120') {
-                try {
-                    bgMusic.currentTime = 0;
-                    await bgMusic.play();
-                } catch (error) {
-                    // 捕捉中斷錯誤或自動播放策略限制
-                    console.warn("音訊播放被攔截或發生錯誤:", error);
-                }
-            }
-
-            isPlaying = true;
-            currentStep = 0;
-            remainingTime = parseInt(gameDurationInput.value) || 60;
-            const initialTime = remainingTime;
-            
-            startBtn.classList.add('hidden');
-            stopBtn.classList.remove('hidden');
-            gameDurationInput.disabled = true;
-            musicMode.disabled = true;
-            bpmRange.disabled = true;
-            voiceSelect.disabled = true;
-
-            generateSequence();
-            updateUI();
-
+        function resetBeatInterval() {
+            if (beatInterval) clearInterval(beatInterval);
             const msPerBeat = (60 / bpm) * 1000;
             beatInterval = setInterval(() => {
-                currentStep++;
-                if (currentStep % (beatsPerCycle * 2) === 0) {
-                    generateSequence();
+                if (isPreparing) {
+                    prepStep++;
+                    if (prepStep >= 8) {
+                        isPreparing = false;
+                        currentStep = 0;
+                        generateSequence();
+                        startMainTimer();
+                    }
+                } else {
+                    currentStep++;
+                    if (currentStep % (beatsPerCycle * 2) === 0) generateSequence();
                 }
                 updateUI();
             }, msPerBeat);
+        }
 
+        function startMainTimer() {
+            remainingTime = parseInt(gameDurationInput.value) || 60;
+            const initialTime = remainingTime;
             gameTimer = setInterval(() => {
                 remainingTime--;
                 const percent = (remainingTime / initialTime) * 100;
@@ -386,24 +480,39 @@
             }, 1000);
         }
 
+        function startGame() {
+            if (isPlaying) return;
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            synth.cancel();
+            isPlaying = true;
+            isPreparing = true;
+            prepStep = 0;
+            currentStep = -1;
+            
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            gameDurationInput.disabled = true;
+            musicMode.disabled = true;
+            voiceSelect.disabled = true;
+
+            updateUI(); // 立即觸發第一拍
+            resetBeatInterval();
+        }
+
         function stopGame() {
             isPlaying = false;
+            isPreparing = false;
             clearInterval(beatInterval);
             clearInterval(gameTimer);
             synth.cancel(); 
-            
-            // 安全地暫停音樂，確保播放請求已處理
-            if (!bgMusic.paused) {
-                bgMusic.pause();
-            }
-            
+            prepLayer.classList.add('hidden');
             startBtn.classList.remove('hidden');
             stopBtn.classList.add('hidden');
             gameDurationInput.disabled = false;
             musicMode.disabled = false;
-            if (musicMode.value !== 'drum120') bpmRange.disabled = false;
             voiceSelect.disabled = false;
-            
             currentStep = -1;
             renderCards();
             phaseIndicator.textContent = '準備好了嗎？';
